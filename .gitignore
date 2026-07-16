@@ -10,3 +10,10 @@ datasets/ensemble_model.pkl
 datasets/robot_experience.npz
 datasets/sequences.npz
 !datasets/.gitkeep
+datasets/world_transformer.pt
+datasets/sequences.npz
+results/_drift.pkl
+results/_stage2_state.pkl
+results/_upgrade_state.pkl
+assets/stage2_planning.png
+assets/stage2_prediction.png

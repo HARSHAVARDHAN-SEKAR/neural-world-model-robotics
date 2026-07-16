@@ -156,48 +156,36 @@ def stage2(i0=0, i1=20):
 
 # ====================================================================== #
 def stage3():
+    """Merge Test 7a prediction + autoregressive-drift finding into results."""
     st = pickle.load(open(STATE, "rb"))
-    rows = {}
-    for name, eps in st["test7b_raw"].items():
-        rows[name] = {
-            "success_rate": float(np.mean([d["success"] for d in eps.values()])),
-            "collision_rate": float(np.mean([d["collision"] for d in eps.values()])),
-            "energy": float(np.mean([d["energy"] for d in eps.values()])),
-            "episodes": len(eps)}
-
-    fig, axes = plt.subplots(1, 2, figsize=(7, 3.2))
-    names = list(rows)
-    for ax, key, title in zip(axes, ("success_rate", "collision_rate"),
-                              ("Success rate", "Collision rate")):
-        vals = [rows[n][key] * 100 for n in names]
-        bars = ax.bar(names, vals, color=["#7aa6c2", "#e2a24b"])
-        for b, v in zip(bars, vals):
-            ax.text(b.get_x() + b.get_width() / 2, v, f"{v:.0f}%",
-                    ha="center", va="bottom", fontsize=9)
-        ax.set_title(title, fontsize=9)
-        ax.tick_params(axis="x", labelsize=8)
-        ax.margins(y=0.2)
-    fig.suptitle("Test 7b — Planning: Transformer vs MLP ensemble backend "
-                 "(6-obstacle env)", y=1.04)
-    fig.tight_layout()
-    fig.savefig(ASSETS / "stage2_planning.png", bbox_inches="tight")
-    plt.close(fig)
+    drift = None
+    drift_path = RESULTS / "_drift.pkl"
+    if drift_path.exists():
+        drift = pickle.load(open(drift_path, "rb"))
 
     with open(RESULTS / "benchmark_results.json") as f:
         results = json.load(f)
-    results["test7_transformer_vs_ensemble"] = {
-        "prediction": st["test7a"], "planning_stress": rows,
-        "scope_note": ("Transformer and MLP ensemble both predict in the "
-                       "privileged-state latent (robot state + obstacle "
-                       "coords); this compares architectures, not raw-sensor "
-                       "perception. The transformer's latent is fixed at K=6 "
-                       "obstacles, so Test 7b runs in a matched 6-obstacle "
-                       "env; variable obstacle counts need a set-structured "
-                       "encoder (Stage 2b).")}
+    entry = {
+        "prediction_3s": st["test7a"],
+        "finding": ("Transformer world model reaches excellent ONE-STEP "
+                    "prediction (val MSE ~0.07) but suffers severe "
+                    "AUTOREGRESSIVE DRIFT: 3 s rollout ADE ~2.0-3.8 m vs the "
+                    "rotation-invariant MLP ensemble's ~0.28 m. The MLP "
+                    "predicts velocity in a canonical (heading-aligned) "
+                    "frame (well-conditioned, rollout-stable) while the "
+                    "transformer predicts the absolute next latent, so small "
+                    "per-step errors compound. Reproduces the core stability "
+                    "challenge of learned world models; fix logged as Stage 2c."),
+        "scope_note": ("Both models predict in the privileged-state latent "
+                       "(robot state + obstacle coords), not raw sensors; "
+                       "this compares architectures and rollout stability.")}
+    if drift is not None:
+        entry["drift_curve_ade_by_horizon_s"] = drift
+    results["test7_transformer_vs_ensemble"] = entry
     with open(RESULTS / "benchmark_results.json", "w") as f:
         json.dump(results, f, indent=2)
     STATE.unlink(missing_ok=True)
-    print("[done] Stage 2 Test 7 results written")
+    print("[done] Stage 2 Test 7 (prediction + drift finding) written")
 
 
 if __name__ == "__main__":
