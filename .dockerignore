@@ -1,0 +1,6 @@
+assets/
+results/
+datasets/
+__pycache__/
+*.pyc
+.git/

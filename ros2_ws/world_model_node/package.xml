@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>world_model_node</name>
+  <version>0.1.0</version>
+  <description>Neural world model prediction + Neural-MPC controller</description>
+  <maintainer email="you@example.com">you</maintainer>
+  <license>MIT</license>
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

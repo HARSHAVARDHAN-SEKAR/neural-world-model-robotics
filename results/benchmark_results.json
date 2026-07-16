@@ -1,0 +1,93 @@
+{
+  "test1_prediction": {
+    "in_distribution": {
+      "ADE_neural": 0.1214381869584503,
+      "FDE_neural": 0.3348468694310722,
+      "ADE_const_vel": 0.1903436045860766,
+      "FDE_const_vel": 0.5224743046008551,
+      "horizon_s": 3.0,
+      "episodes": 40,
+      "env": "in-distribution"
+    },
+    "out_of_distribution": {
+      "ADE_neural": 0.18696128957955588,
+      "FDE_neural": 0.5216510511567208,
+      "ADE_const_vel": 0.44801812483870423,
+      "FDE_const_vel": 1.2314088755984116,
+      "horizon_s": 3.0,
+      "episodes": 40,
+      "env": "unseen-harder"
+    }
+  },
+  "test2_planning": {
+    "in_distribution": {
+      "Reactive": {
+        "success_rate": 0.6666666666666666,
+        "collision_rate": 0.3333333333333333,
+        "avg_steps": 164.9,
+        "avg_path_length": 16.537199226438812,
+        "avg_smoothness": 18.314486088556496,
+        "avg_energy": 19.645444700327257
+      },
+      "DWA": {
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "avg_steps": 184.03333333333333,
+        "avg_path_length": 20.946000000000005,
+        "avg_smoothness": 4.167666666666666,
+        "avg_energy": 24.547066666666655
+      },
+      "MPPI": {
+        "success_rate": 0.9333333333333333,
+        "collision_rate": 0.0,
+        "avg_steps": 270.93333333333334,
+        "avg_path_length": 21.544427949945433,
+        "avg_smoothness": 6.432240034271774,
+        "avg_energy": 17.494176213673093
+      },
+      "Neural-MPC": {
+        "success_rate": 1.0,
+        "collision_rate": 0.0,
+        "avg_steps": 268.7,
+        "avg_path_length": 21.3184382749453,
+        "avg_smoothness": 6.240041763249597,
+        "avg_energy": 17.20516352065165
+      }
+    },
+    "out_of_distribution": {
+      "Reactive": {
+        "success_rate": 0.7,
+        "collision_rate": 0.3,
+        "avg_steps": 160.86666666666667,
+        "avg_path_length": 17.54038077637121,
+        "avg_smoothness": 6.360433616736706,
+        "avg_energy": 20.842025185387925
+      },
+      "DWA": {
+        "success_rate": 0.9666666666666667,
+        "collision_rate": 0.03333333333333333,
+        "avg_steps": 185.0,
+        "avg_path_length": 20.857333333333337,
+        "avg_smoothness": 4.546,
+        "avg_energy": 24.430133333333327
+      },
+      "MPPI": {
+        "success_rate": 0.9333333333333333,
+        "collision_rate": 0.0,
+        "avg_steps": 283.93333333333334,
+        "avg_path_length": 22.428521045574065,
+        "avg_smoothness": 7.147176801247545,
+        "avg_energy": 18.215637360898157
+      },
+      "Neural-MPC": {
+        "success_rate": 0.9333333333333333,
+        "collision_rate": 0.0,
+        "avg_steps": 284.3666666666667,
+        "avg_path_length": 22.3640835317497,
+        "avg_smoothness": 6.753786306712497,
+        "avg_energy": 17.962040263906115
+      }
+    }
+  },
+  "runtime_s": 218.2
+}
