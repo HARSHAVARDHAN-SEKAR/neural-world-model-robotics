@@ -112,6 +112,25 @@ Ensemble disagreement vs realized prediction error over 720 tracks: **r = 0.49**
 
 Imagining multiple futures cuts collisions by **40 %**. Negative results are reported too: pure CVaR pessimism trades success for caution, and uncertainty-inflated margins performed worse in crowds — see the [technical report](results/technical_report.pdf).
 
+### Test 6 — Occupancy-grid prediction & planning (Stage 1 upgrade)
+
+Predicting a full occupancy grid instead of per-obstacle points, with ensemble disagreement naturally widening uncertain cells (no separate uncertainty scalar needed):
+
+| Metric | Constant velocity | Neural ensemble |
+|---|--:|--:|
+| Occupancy IoU (0.5–1.5s) | 0.569 | **0.656** |
+
+| Planner (stress env, 1.5s horizon) | Success | Collision |
+|---|--:|--:|
+| Neural-MPC (points) | 45 % | 35 % |
+| Risk-MPC (CVaR, points) | 40 % | 20 % |
+| **Occupancy-MPC (grid)** | **60 %** | 25 % |
+
+![Occupancy prediction](assets/occupancy_prediction.png)
+![Occupancy planning](assets/occupancy_planning.png)
+
+Reproduce: `python scripts/run_stage1_occupancy.py 1`, then `2` (or the chunked `scripts/bench_stage1_chunk.py`), then `3`.
+
 All figures: `assets/` · Raw metrics: `results/benchmark_results.json`
 
 ---
@@ -132,6 +151,7 @@ make test        # fast smoke test (<60 s): env, models, all 5 planners
 make bench       # full pipeline: data → train → Tests 1–3 → all figures (~5 min, CPU)
 make upgrade     # ensemble uncertainty study: Tests 4–5
 make demo        # regenerate the animated demo GIF
+make occupancy   # Stage 1: occupancy-grid prediction + planning (Test 6)
 make docker      # reproduce everything inside a pinned container
 ```
 
@@ -152,7 +172,8 @@ neural_world_model_robotics/
 ## Roadmap
 
 **Done:** learned dynamics · rotation-invariant prediction · imagination planning · ensemble uncertainty · risk-aware MPC · full benchmark suite · Docker/CI · technical report.
-**Next:** future **occupancy-grid** prediction (predict the map, not the points) → GPU-trained Transformer/RSSM latent world model → ROS 2 + Gazebo validation with perception front-end → real robot (Jetson + LiDAR) with continual online learning. Detailed staged plan: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+**Done (Stage 1):** occupancy-grid prediction and planning (Test 6) — see results above.
+**Next (Stage 2, scaffolded, needs GPU/torch locally):** train the included Transformer world model on episode sequences (`scripts/train_world_transformer.py`) → wire it into an occupancy-aware planner and benchmark it → ROS 2 + Gazebo validation with a perception front-end → real robot (Jetson + LiDAR) with continual online learning. Detailed staged plan: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Related repositories
 

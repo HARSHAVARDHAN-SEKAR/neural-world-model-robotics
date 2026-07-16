@@ -302,3 +302,66 @@ class RiskAwareNeuralMPC(NeuralMPCPlanner):
         self.mean = np.roll(self.mean, -1, axis=0)
         self.mean[-1] = self.mean[-2]
         return a
+
+
+# ====================================================================== #
+class OccupancyNeuralMPC(NeuralMPCPlanner):
+    """
+    Stage 1 upgrade: plans against a PREDICTED OCCUPANCY GRID instead of
+    (or alongside) per-obstacle point distances.
+
+    At each planning step, the ensemble's imagined obstacle positions at
+    every horizon step are rasterized into an occupancy grid (member
+    disagreement naturally widens/softens the grid — see
+    nwm.env.occupancy.rasterize_ensemble). The MPPI cost then reads
+    predicted occupancy directly under each candidate trajectory, in
+    addition to the existing point-based cost, so the planner reasons
+    about "how much of this cell will be blocked" rather than only
+    "how far is the nearest point estimate".
+    """
+
+    name = "Occupancy-MPC"
+
+    def __init__(self, robot_model, ensemble_model, occ_weight: float = 55.0,
+                 resolution: float = 0.5, **kw):
+        super().__init__(robot_model, ensemble_model, **kw)
+        self.occ_weight = occ_weight
+        self.resolution = resolution
+
+    def act(self, obs):
+        from nwm.env.occupancy import rasterize_ensemble, trajectory_occupancy_cost
+
+        acts = self._sample_actions()
+        traj = self._rollout(obs["robot"], acts)             # (H, N, 3)
+
+        self.pos_hist.append(obs["obst_pos"].copy())
+        if len(self.pos_hist) > HISTORY + 1:
+            self.pos_hist = self.pos_hist[-(HISTORY + 1):]
+        if len(self.pos_hist) < HISTORY + 1:
+            hist = np.stack([obs["obst_pos"] - obs["obst_vel"] * DT,
+                             obs["obst_pos"]])
+            fut = constant_velocity_rollout(hist, self.h)
+            occ_cost = _traj_cost(traj, fut, obs["goal"], acts)
+        else:
+            all_futures = self.obst_model.rollout_all(
+                np.stack(self.pos_hist), self.h)               # (M, H, K, 2)
+            point_fut = all_futures.mean(axis=0)                # (H, K, 2)
+            base_cost = _traj_cost(traj, point_fut, obs["goal"], acts)
+
+            # occupancy term: rasterize each horizon step's ensemble,
+            # accumulate cost of the imagined trajectory passing through it
+            occ_extra = np.zeros(acts.shape[0])
+            for h in range(self.h):
+                occ = rasterize_ensemble(all_futures[:, h], self.resolution)
+                occ_extra += trajectory_occupancy_cost(
+                    traj[h:h + 1, :, :2], occ, self.resolution,
+                    weight=self.occ_weight)
+            occ_cost = base_cost + occ_extra
+
+        w = np.exp(-(occ_cost - occ_cost.min()) / self.lam)
+        w /= w.sum()
+        self.mean = np.tensordot(w, acts, axes=1)
+        a = self.mean[0].copy()
+        self.mean = np.roll(self.mean, -1, axis=0)
+        self.mean[-1] = self.mean[-2]
+        return a

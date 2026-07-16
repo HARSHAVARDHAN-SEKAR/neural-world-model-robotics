@@ -58,5 +58,40 @@ def test_all():
     print("ALL SMOKE TESTS PASSED")
 
 
+def test_occupancy():
+    """Stage 1: occupancy grid module + Occupancy-MPC planner sanity."""
+    from nwm.env.occupancy import (occupancy_iou, occupancy_soft_iou,
+                                   rasterize_ensemble, rasterize_obstacles)
+    from nwm.planners.planners import OccupancyNeuralMPC
+
+    env = DynamicWorld(seed=1)
+    obs = env.observe()
+    grid = rasterize_obstacles(obs["obst_pos"])
+    assert grid.shape == grid.T.shape and 0.0 <= grid.max() <= 1.0
+
+    # identical grids -> IoU 1.0
+    assert abs(occupancy_iou(grid, grid) - 1.0) < 1e-6
+    assert abs(occupancy_soft_iou(grid, grid) - 1.0) < 1e-6
+
+    (S, A, SN), tracks = collect()
+    rm = RobotDynamicsModel(seed=0)
+    rm.fit(S, A, SN)
+    X, Y = ObstacleMotionModel.make_dataset(np.concatenate(tracks, axis=0))
+    ens = EnsembleObstacleModel(n_members=2, seed=0)
+    ens.fit(X, Y)
+
+    hist = tracks[0][:HISTORY + 1]
+    futures = ens.rollout_all(hist, 5)
+    occ = rasterize_ensemble(futures[:, 0])
+    assert occ.shape == grid.shape and 0.0 <= occ.max() <= 1.0
+
+    pl = OccupancyNeuralMPC(rm, ens, horizon=6, seed=0)
+    env2 = DynamicWorld(seed=42)
+    r = run_episode(env2, pl, max_steps=20)
+    assert np.isfinite(r["path_length"])
+    print("OCCUPANCY SMOKE TEST PASSED")
+
+
 if __name__ == "__main__":
     test_all()
+    test_occupancy()

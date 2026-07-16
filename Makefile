@@ -21,3 +21,6 @@ docker:
 
 clean:
 	find . -name __pycache__ -type d -exec rm -rf {} +
+
+occupancy:       ## Stage 1: occupancy-grid prediction + planning (Test 6)
+	python3 scripts/run_stage1_occupancy.py 1 && python3 scripts/run_stage1_occupancy.py 2 && python3 scripts/run_stage1_occupancy.py 3
