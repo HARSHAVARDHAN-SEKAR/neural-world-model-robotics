@@ -64,9 +64,46 @@ Camera · LiDAR · IMU · GPS · Encoders
       checkpointing) — syntax-checked; not run in this environment
       (no GPU / torch here) — **run locally**:
       `python scripts/collect_sequence_data.py && python scripts/train_world_transformer.py --epochs 30`
-- [ ] Wire the trained checkpoint's `.imagine(...)` into an
-      Occupancy/Neural-MPC-style planner and benchmark head-to-head
-      against the MLP ensemble in the same tables (Test 7, not yet run)
+- [x] **Trained** on your hardware: 60 epochs, val MSE 26.8 -> 0.104,
+      clean curve, no overfitting (checkpoint datasets/world_transformer.pt)
+- [x] `src/nwm/models/transformer_wrapper.py`: loads the checkpoint and
+      exposes the same `.rollout()` interface as the MLP obstacle model,
+      dropping into NeuralMPCPlanner unchanged (torch imported lazily so
+      the rest of the repo + CI still run without torch)
+- [x] `scripts/run_stage2_benchmark.py`: **Test 7** — Transformer vs MLP
+      ensemble, prediction (7a) + planning (7b), same metrics/episodes
+- [x] **Test 7 run — honest negative result (the Stage 2 finding).**
+      The transformer reaches excellent ONE-STEP prediction (val MSE
+      ~0.07) but suffers severe **autoregressive drift**: 3 s rollout ADE
+      ~2.0 m vs the rotation-invariant MLP ensemble's ~0.10 m. The MLP
+      predicts velocity in a heading-aligned canonical frame (a
+      well-conditioned, rollout-stable target); the transformer predicts
+      the absolute next latent, so per-step errors compound. Diagnostic:
+      `scripts/diagnose_drift.py` -> assets/autoregressive_drift.png.
+      This reproduces the central stability challenge of learned world
+      models — a stronger portfolio result than a tuned win, because it
+      shows *why* the classical parameterization wins.
+
+## Stage 2c — Rollout-stable world model (the fix, next real experiment)
+- [ ] Multi-step rollout loss / scheduled sampling: during training,
+      periodically feed the model its OWN prediction and penalize
+      accumulated K-step error, so it learns to recover from its own
+      mistakes rather than only one-step teacher-forced accuracy.
+- [ ] Or change the target: predict per-obstacle velocity in a
+      rotation-invariant frame (as the MLP does) instead of absolute
+      latent — better-conditioned for rollout.
+- [ ] Or latent regularization (DreamerV3-style KL) to keep predicted
+      latents on-manifold across the rollout.
+- [ ] Re-run Test 7 after any of these; expect the drift curve to flatten.
+
+## Stage 2b — Variable obstacle counts (found during Stage 2)
+- [ ] The transformer's latent is fixed at K=6 (robot 3 + 2K), so it
+      cannot ingest the 12-obstacle stress env. Test 7b runs in a matched
+      6-obstacle env. Handling variable K needs a **set-structured
+      encoder** — attention over a padded/masked obstacle set, or a
+      per-obstacle token stream — so the model is permutation-invariant
+      and count-agnostic. This is the natural bridge to the
+      interaction-aware (GNN/attention) models in Stage 3.
 - [ ] Replace ground-truth-state "latent" placeholder with
       `models_pytorch/vae_encoder.py` over rasterized lidar (raw sensors,
       not privileged state)

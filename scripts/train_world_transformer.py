@@ -35,40 +35,52 @@ sys.path.insert(0, str(ROOT / "models_pytorch"))
 
 def build_latent_sequences(seq_npz: Path, context: int = 100, horizon: int = 50):
     """
-    Load datasets/sequences.npz (written by collect_sequence_data.py) and
-    build training windows of [z_t, a_t] -> z_{t+1}. Here z is simply the
-    concatenation of normalized robot state + flattened obstacle
-    positions (a placeholder "latent" — swap in models_pytorch/vae_encoder.py
-    once training from raw lidar/camera rasters instead of ground-truth
-    state).
+    Load datasets/sequences.npz and build fixed-length training windows of
+    [z_t, a_t] -> z_{t+1}, where z is normalized robot state + flattened
+    obstacle positions (a placeholder "latent"; swap in the VAE encoder
+    later). All windows are forced to identical shape so they stack into
+    a dense float tensor.
     """
     import torch
 
     data = np.load(seq_npz, allow_pickle=True)
-    robot_seqs = data["robot"]        # (n_episodes,) object array of (T, 3)
-    action_seqs = data["actions"]     # (n_episodes,) object array of (T, 2)
-    obst_seqs = data["obst"]          # (n_episodes,) object array of (T, K, 2)
+    robot_seqs = data["robot"]
+    action_seqs = data["actions"]
+    obst_seqs = data["obst"]
 
     windows_z, windows_a, windows_target = [], [], []
     for robot, actions, obst in zip(robot_seqs, action_seqs, obst_seqs):
-        T = len(actions)
-        obst_flat = obst.reshape(T + 1, -1)                    # (T+1, 2K)
-        z = np.concatenate([robot, obst_flat[:len(robot)]], axis=-1)  # (T, 3+2K)
-        if T < context + horizon:
+        robot = np.asarray(robot, dtype=np.float32)          # (T, 3)
+        actions = np.asarray(actions, dtype=np.float32)      # (T, 2)
+        obst = np.asarray(obst, dtype=np.float32)            # (T+1, K, 2)
+
+        # Align every stream to the same length T
+        T = min(len(robot), len(actions), len(obst))
+        robot = robot[:T]
+        actions = actions[:T]
+        obst_flat = obst[:T].reshape(T, -1)                  # (T, 2K)
+
+        z = np.concatenate([robot, obst_flat], axis=-1)      # (T, 3 + 2K)
+
+        # Need one extra step for the next-state target
+        if T < context + 1:
             continue
-        for start in range(0, T - context - horizon, max(1, horizon // 2)):
-            ctx_z = z[start:start + context]
-            ctx_a = actions[start:start + context]
-            fut_z = z[start + 1:start + context + 1]           # next-step targets
-            windows_z.append(ctx_z)
-            windows_a.append(ctx_a)
-            windows_target.append(fut_z)
+        # Slide a context-length window; target is the window shifted by 1
+        step = max(1, horizon // 2)
+        for start in range(0, T - context - 1, step):
+            windows_z.append(z[start:start + context])
+            windows_a.append(actions[start:start + context])
+            windows_target.append(z[start + 1:start + context + 1])
+
+    if not windows_z:
+        raise SystemExit(
+            "No training windows built — episodes shorter than context. "
+            "Lower --context or collect longer episodes (--steps).")
 
     Z = torch.tensor(np.stack(windows_z), dtype=torch.float32)
     A = torch.tensor(np.stack(windows_a), dtype=torch.float32)
     Y = torch.tensor(np.stack(windows_target), dtype=torch.float32)
     return Z, A, Y
-
 
 def main():
     import torch

@@ -9,3 +9,4 @@ datasets/world_model.pkl
 datasets/ensemble_model.pkl
 datasets/robot_experience.npz
 datasets/sequences.npz
+!datasets/.gitkeep

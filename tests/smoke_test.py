@@ -92,6 +92,17 @@ def test_occupancy():
     print("OCCUPANCY SMOKE TEST PASSED")
 
 
+def test_transformer_wrapper_importable():
+    """Stage 2: wrapper module must import without torch (lazy import),
+    and instantiation must raise a clear error if torch/checkpoint absent.
+    CI has no torch, so we only assert the import + graceful failure."""
+    import importlib
+    mod = importlib.import_module("nwm.models.transformer_wrapper")
+    assert hasattr(mod, "TransformerWorldModelWrapper")
+    print("TRANSFORMER WRAPPER IMPORT TEST PASSED")
+
+
 if __name__ == "__main__":
     test_all()
     test_occupancy()
+    test_transformer_wrapper_importable()

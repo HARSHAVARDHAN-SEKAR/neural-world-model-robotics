@@ -1,8 +1,8 @@
 {
   "test1_prediction": {
     "in_distribution": {
-      "ADE_neural": 0.12143818695845165,
-      "FDE_neural": 0.33484686943107644,
+      "ADE_neural": 0.1214381869584503,
+      "FDE_neural": 0.3348468694310722,
       "ADE_const_vel": 0.1903436045860766,
       "FDE_const_vel": 0.5224743046008551,
       "horizon_s": 3.0,
@@ -10,8 +10,8 @@
       "env": "in-distribution"
     },
     "out_of_distribution": {
-      "ADE_neural": 0.18696128957955863,
-      "FDE_neural": 0.5216510511567286,
+      "ADE_neural": 0.18696128957955588,
+      "FDE_neural": 0.5216510511567208,
       "ADE_const_vel": 0.44801812483870423,
       "FDE_const_vel": 1.2314088755984116,
       "horizon_s": 3.0,
@@ -41,16 +41,16 @@
         "success_rate": 0.9333333333333333,
         "collision_rate": 0.0,
         "avg_steps": 270.93333333333334,
-        "avg_path_length": 21.54442794994544,
-        "avg_smoothness": 6.432240034271766,
-        "avg_energy": 17.494176213673096
+        "avg_path_length": 21.544427949945433,
+        "avg_smoothness": 6.432240034271774,
+        "avg_energy": 17.494176213673093
       },
       "Neural-MPC": {
         "success_rate": 1.0,
         "collision_rate": 0.0,
         "avg_steps": 268.7,
         "avg_path_length": 21.3184382749453,
-        "avg_smoothness": 6.2400417632496294,
+        "avg_smoothness": 6.240041763249597,
         "avg_energy": 17.20516352065165
       }
     },
@@ -75,73 +75,46 @@
         "success_rate": 0.9333333333333333,
         "collision_rate": 0.0,
         "avg_steps": 283.93333333333334,
-        "avg_path_length": 22.42852104557396,
-        "avg_smoothness": 7.14717680124755,
-        "avg_energy": 18.215637360898025
+        "avg_path_length": 22.428521045574065,
+        "avg_smoothness": 7.147176801247545,
+        "avg_energy": 18.215637360898157
       },
       "Neural-MPC": {
         "success_rate": 0.9333333333333333,
         "collision_rate": 0.0,
         "avg_steps": 284.3666666666667,
-        "avg_path_length": 22.36408353174972,
-        "avg_smoothness": 6.753786306712538,
-        "avg_energy": 17.96204026390616
+        "avg_path_length": 22.3640835317497,
+        "avg_smoothness": 6.753786306712497,
+        "avg_energy": 17.962040263906115
       }
     }
   },
-  "test4_uncertainty": {
-    "disagreement_error_correlation": 0.492007246169404,
-    "n_members": 5,
-    "env": "stress"
-  },
-  "test5_risk_aware_stress": {
-    "Single model\n(1 future)": {
-      "success_rate": 0.7,
-      "collision_rate": 0.25,
-      "energy": 17.558483385573663,
-      "episodes": 20
-    },
-    "Ensemble mean\n(5 futures)": {
-      "success_rate": 0.75,
-      "collision_rate": 0.15,
-      "energy": 18.130508596903535,
-      "episodes": 20
-    },
-    "Ensemble CVaR\n(risk-aware)": {
-      "success_rate": 0.7,
-      "collision_rate": 0.15,
-      "energy": 18.32303039227563,
-      "episodes": 20
-    }
-  },
-  "test6_occupancy": {
+  "runtime_s": 210.8,
+  "test7_transformer_vs_ensemble": {
     "prediction": {
-      "IoU_neural_ensemble": 0.6556302440052248,
-      "soft_IoU_neural_ensemble": 0.6552016114964053,
-      "IoU_const_velocity": 0.5690505363185965,
-      "checkpoints_s": [
-        0.5,
-        1.0,
-        1.5
-      ],
-      "episodes": 30
+      "ADE_tf": 1.8431261368096252,
+      "FDE_tf": 2.6172859674371454,
+      "ADE_ens": 0.09975287476686959,
+      "FDE_ens": 0.27960981571855514,
+      "ADE_cv": 0.20160895121308542,
+      "FDE_cv": 0.551768449504028,
+      "horizon_s": 3.0,
+      "episodes": 40
     },
     "planning_stress": {
-      "Neural-MPC": {
-        "success_rate": 0.45,
+      "Ensemble-MPC": {
+        "success_rate": 0.95,
+        "collision_rate": 0.0,
+        "energy": 17.588669541459133,
+        "episodes": 20
+      },
+      "Transformer-MPC": {
+        "success_rate": 0.6,
         "collision_rate": 0.35,
-        "energy": 17.203972297149626
-      },
-      "Risk-MPC": {
-        "success_rate": 0.5,
-        "collision_rate": 0.1,
-        "energy": 19.502153761892707
-      },
-      "Occupancy-MPC": {
-        "success_rate": 0.55,
-        "collision_rate": 0.25,
-        "energy": 17.934404740671305
+        "energy": 15.267212390271109,
+        "episodes": 20
       }
-    }
+    },
+    "scope_note": "Transformer and MLP ensemble both predict in the privileged-state latent (robot state + obstacle coords); this compares architectures, not raw-sensor perception. The transformer's latent is fixed at K=6 obstacles, so Test 7b runs in a matched 6-obstacle env; variable obstacle counts need a set-structured encoder (Stage 2b)."
   }
 }
